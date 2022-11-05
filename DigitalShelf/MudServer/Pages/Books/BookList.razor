@@ -1,0 +1,135 @@
+﻿@page "/booklist"
+@using MudServer.Common
+
+@inject IBookManager _bookManager
+@inject NavigationManager _navigationManager
+@inject IDialogService _dialogService
+
+@*Be sure to add AuthorizeRouteView in App.razor*@
+@attribute [Authorize] 
+@*@attribute [Authorize(Roles=GlobalConst.RoleAdmin)] *@
+
+<div>
+    My Role is: @MyRole
+</div>
+
+
+<div class="row mt-4">
+    <div class="col" style="margin-bottom: 2rem;">
+        <h4 class="card-title text-info">
+            My Library
+            <MudButton Href="@($"book/create")" Variant="Variant.Filled" Style="float: right;" Color="Color.Primary">
+                <MudTooltip Text="Add">Add a Book</MudTooltip>
+            </MudButton>
+        </h4>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <MudTable Items="@Books" class="table table-bordered table-hover">
+            <HeaderContent>
+                <MudTh>Id</MudTh>
+                <MudTh>Title</MudTh>
+                <MudTh>Author</MudTh>
+                <MudTh>DatePublished</MudTh>
+                <MudTh>Publisher</MudTh>
+                <MudTh>PageLength</MudTh>
+                <MudTh>Description</MudTh>
+                <MudTh>ASIN</MudTh>
+                <MudTh>Rating</MudTh>
+                <MudTh>Comments</MudTh>
+                <MudTh>IsSeries</MudTh>
+                <MudTh>IsFavorite</MudTh>
+                <MudTh>IsNotify</MudTh>
+                <MudTh>Genre</MudTh>
+                <MudTh>Edit</MudTh>
+                <MudTh>Delete</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Id">@context.Id</MudTd>
+                <MudTd DataLabel="Title">@context.Title</MudTd>
+                <MudTd DataLabel="Author">@context.Author</MudTd>
+                <MudTd DataLabel="DatePublished">@context.DatePublished.Value.ToString("MM/dd/yyyy")</MudTd>
+                <MudTd DataLabel="Publisher">@context.Publisher</MudTd>
+                <MudTd DataLabel="PageLength">@context.PageLength</MudTd>
+                <MudTd DataLabel="Description">@context.Description</MudTd>
+                <MudTd DataLabel="ASIN">@context.ASIN</MudTd>
+                <MudTd DataLabel="Rating">@context.Rating</MudTd>
+                <MudTd DataLabel="Comments">@context.Comments</MudTd>
+                <MudTd DataLabel="IsSeries">@context.IsSeries</MudTd>
+                <MudTd DataLabel="IsFavorite">@context.IsFavorite</MudTd>
+                <MudTd DataLabel="IsNotify">@context.IsNotify</MudTd>
+                <MudTd DataLabel="Genre">@context.Genres</MudTd>
+                <MudTd>
+                    <MudTooltip Text="Edit">
+                        <MudFab Href="@($"book/edit/{@context.Id}")" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Edit" Size="Size.Small" />
+                    </MudTooltip>
+                </MudTd>
+                <MudTd>
+                    <MudTooltip Text="Delete">
+                        <MudIconButton @onclick="()=> OnButtonClicked(context.Id)" Icon="@Icons.Material.Filled.Delete" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Medium" />
+                    </MudTooltip>
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    </div>
+</div>
+
+@code {
+
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+    public string MyRole { get; set; } = null!;
+
+    public IEnumerable<BookView> Books { get; set; } = new List<BookView>();
+    private int? DeleteId { get; set; } = null;
+    private bool IsProcessing { get; set; } = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationState;
+
+        if (!authState.User.Identity!.IsAuthenticated)
+        {
+            var uri = new Uri(_navigationManager.Uri);
+            _navigationManager.NavigateTo($"/identity/account/login?returnUrl={uri.LocalPath}", forceLoad:true);
+        }
+
+        MyRole = authState.User.IsInRole(GlobalConst.RoleAdmin) 
+            ? GlobalConst.RoleAdmin : GlobalConst.RoleCustomer;
+
+        //authState.User.Identity.Name = the actual email of the account
+        Books = await _bookManager.GetBooksAsync(authState.User.Identity.Name);
+    }
+
+    public async Task BookDeleteAsync(int id)
+    {
+        var authState = await AuthenticationState;
+
+        DeleteId = id;
+        IsProcessing = true;
+
+        if (DeleteId != null)
+        {
+            await _bookManager.DeleteBookAsync(DeleteId.Value);
+
+            Books = await _bookManager.GetBooksAsync(authState.User.Identity.Name);
+        }
+        IsProcessing = false;
+    }
+    
+    private async void OnButtonClicked(int id)
+    {
+        bool? result = await _dialogService.ShowMessageBox(
+                "Warning", 
+                "Deleting can not be undone!", 
+                yesText:"Delete!", cancelText:"Cancel");
+        if (result == true)
+        {
+            await BookDeleteAsync(id);
+        }
+
+        StateHasChanged();
+    }
+}

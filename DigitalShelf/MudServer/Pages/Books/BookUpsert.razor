@@ -1,0 +1,145 @@
+﻿@page "/book/create"
+@page "/book/edit/{Id:int}"
+
+@using MudServer.Managers.Interfaces
+@using MudServer.ViewModels
+@using Microsoft.AspNetCore.Components
+@using System.Globalization
+@using MudServer.Common
+
+@inject NavigationManager _navigationManager
+@inject IBookManager _bookManager
+
+@*Be sure to add AuthorizeRouteView in App.razor*@
+@attribute [Authorize] 
+@*@attribute [Authorize(Roles=GlobalConst.RoleAdmin)] *@
+
+<div>
+    My Role is: @MyRole
+</div>
+
+
+<div class="row mt-2 mb-5">
+    <h3 class="card-title text-info mb-3 ml-3">@Title Book</h3>
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <EditForm Model="@BookView" OnValidSubmit="HandleBookUpsert">
+                    <DataAnnotationsValidator></DataAnnotationsValidator>
+                    <MudGrid>
+                        <MudItem xs="12" sm="7">
+                            <MudCard>
+                                <MudCardContent>
+                                    <MudTextField Label="Title"  @bind-Value="BookView.Title" For="@(() => BookView.Title)" />
+                                    <MudTextField Label="Author"  @bind-Value="BookView.Author" For="@(() => BookView.Author)" />
+                                    <MudDatePicker MaxDate="DateTime.Now" FormatString="yyyy - MMM - ddd - HH:mm" Label="Date" Editable="true" @bind-Date="BookView.DatePublished" For="@(() => BookView.DatePublished)" />
+                                    <MudTextField Label="Publisher"  @bind-Value="BookView.Publisher" For="@(() => BookView.Publisher)" />
+                                    <MudNumericField Label="PageLength"  @bind-Value="BookView.PageLength" For="@(() => BookView.PageLength)" />
+                                    <MudTextField Label="Description"  @bind-Value="BookView.Description" For="@(() => BookView.Description)" />
+                                    <MudTextField Label="ASIN"  @bind-Value="BookView.ASIN" For="@(() => BookView.ASIN)" />
+                                    <MudRating @bind-SelectedValue="BookView.Rating" />
+                                    <MudTextField Label="Comments"  @bind-Value="BookView.Comments" For="@(() => BookView.Comments)" />
+                                    <MudCheckBox Label="IsSeries" @bind-Checked="BookView.IsSeries" For="@(() => BookView.IsSeries)" />
+                                    <MudCheckBox Label="IsFavorite" @bind-Checked="BookView.IsFavorite" For="@(() => BookView.IsFavorite)" />
+                                    <MudCheckBox Label="IsNotify" @bind-Checked="BookView.IsNotify" For="@(() => BookView.IsNotify)" />
+                                    <MudSelect @bind-Value="BookView.Genres" Label="Select Genre" AdornmentColor="Color.Secondary" For="@(() => BookView.Genres)">
+                                        @foreach (string item in Genres)
+                                        {
+                                        <MudSelectItem Value="@item">@item</MudSelectItem>
+                                        }
+                                    </MudSelect>
+                                </MudCardContent>
+                                <MudCardActions>
+                                    <MudTooltip Text="Save">
+                                        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Save" Color="Color.Info" Size="Size.Small">Save</MudButton>
+                                        <MudButton Href="/booklist" Style="margin-left:1rem;" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small">Back</MudButton>
+                                    </MudTooltip>
+                                </MudCardActions>
+                            </MudCard>
+                        </MudItem>
+                    </MudGrid>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+
+    [Parameter]
+    public int? Id { get; set; }
+
+    public string MyRole { get; set; } = null!;
+    private BookView BookView { get; set; } = new BookView();
+    private string Title { get; set; } = "Add a ";
+    public List<String> Genres = new() { "Fiction", "SciFi" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationState;
+        //authState.User.Identity.Name = the actual email of the account
+        if (!authState.User.Identity!.IsAuthenticated)
+        {
+            var uri = new Uri(_navigationManager.Uri);
+            _navigationManager.NavigateTo($"/identity/account/login?returnUrl={uri.LocalPath}", forceLoad:true);
+        }
+
+        MyRole = authState.User.IsInRole(GlobalConst.RoleAdmin) 
+            ? GlobalConst.RoleAdmin : GlobalConst.RoleCustomer;
+
+        if (Id != null)
+        {
+            Title = "Update";
+            var id = Id.Value;
+            BookView = await _bookManager.GetBookAsync(id);
+
+        }
+        else
+        {
+            Title = "Add a ";
+            BookView = new();
+        }
+    }
+
+    private async Task HandleBookUpsert()
+    {
+        try
+        {
+            if (BookView.Id != 0 && Title == "Update")
+            {
+                var updateResult = await _bookManager.UpdateBookAsync(BookView);
+
+                if (updateResult != null)
+                {
+
+                }
+                else
+                {
+
+                }
+            }
+            else
+            {
+                var createdResult = await _bookManager.CreateBookAsync(BookView);
+                if (createdResult != null)
+                {
+
+                }
+                else
+                {
+
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Whoops! Location: Handle Book Upsert -> {ex.Message}");
+        }
+
+        _navigationManager.NavigateTo("booklist");
+    }
+}
+

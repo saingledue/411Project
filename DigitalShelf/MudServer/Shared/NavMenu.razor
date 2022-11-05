@@ -1,0 +1,13 @@
+﻿<MudNavMenu>
+    <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Home</MudNavLink>
+    <MudNavLink Href="counter" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Add">Counter</MudNavLink>
+    
+    <AuthorizeView>
+        <MudNavLink Href="booklist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.List">Book List</MudNavLink>
+    </AuthorizeView>
+    
+    @*<AuthorizeView Roles="@GlobalConst.RoleAdmin">
+        <MudNavLink Href="auto-list" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.List">My Autos</MudNavLink>
+    </AuthorizeView>*@    
+
+</MudNavMenu>

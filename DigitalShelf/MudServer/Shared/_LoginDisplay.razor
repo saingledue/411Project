@@ -1,0 +1,25 @@
+﻿<AuthorizeView>
+    <Authorized>
+        <h3>
+            Welcome, @context.User.Identity!.Name
+            <MudTooltip Text="Log Out">
+                <MudIconButton Icon="@Icons.Material.Filled.Logout" Color="Color.Inherit" Link="Identity/Account/Logout"></MudIconButton>
+            </MudTooltip>
+        </h3>
+    </Authorized>
+    <NotAuthorized>
+        <h3>
+            <MudTooltip Text="Register">
+                <MudIconButton Icon="@Icons.Material.Filled.PersonAdd" Color="Color.Inherit" Link="Identity/Account/Register"></MudIconButton>
+            </MudTooltip>
+    
+            <MudTooltip Text="Log In">
+                <MudIconButton Icon="@Icons.Material.Filled.Login" Color="Color.Inherit" Link="Identity/Account/Login"></MudIconButton>
+            </MudTooltip>
+        </h3>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+
+}
