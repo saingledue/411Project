@@ -20,5 +20,6 @@ namespace MudServer.Data
 
         public DbSet<Book> Books { get; set; } = null!;
         public DbSet<User> Users { get; set; } = null!;
+        public DbSet<Customer> Customers { get; set; } = null;
     }
 }

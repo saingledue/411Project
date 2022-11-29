@@ -1,0 +1,132 @@
+﻿@page "/customer/create"
+@page "/customer/edit/{Id:int}"
+
+@using MudServer.Managers.Interfaces
+@using MudServer.ViewModels
+@using Microsoft.AspNetCore.Components
+@using System.Globalization
+@using MudServer.Common
+
+@inject NavigationManager _navigationManager
+@inject ICustomerManager _customerManager
+
+@*Be sure to add AuthorizeRouteView in App.razor*@
+@attribute [Authorize] 
+@*@attribute [Authorize(Roles=GlobalConst.RoleAdmin)] *@
+
+<div>
+    My Role is: @MyRole
+</div>
+
+
+<div class="row mt-2 mb-5">
+    <h3 class="card-title text-info mb-3 ml-3">@Title Customer</h3>
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <EditForm Model="@CustomerView" OnValidSubmit="HandleCustomerUpsert">
+                    <DataAnnotationsValidator></DataAnnotationsValidator>
+                    <MudGrid>
+                        <MudItem xs="12" sm="7">
+                            <MudCard>
+                                <MudCardContent>
+                                    <MudTextField Label="IP"  @bind-Value="CustomerView.IP" For="@(() => CustomerView.IP)" />
+                                    <MudTextField Label="City"  @bind-Value="CustomerView.City" For="@(() => CustomerView.City)" />
+                                    <MudTextField Label="State"  @bind-Value="CustomerView.State" For="@(() => CustomerView.State)" />
+                                    <MudDatePicker MaxDate="DateTime.Now" FormatString="yyyy - MMM - ddd - HH:mm" Label="Date" Editable="true" @bind-Date="CustomerView.LastLogin" For="@(() => CustomerView.LastLogin)" />
+                                    <MudTextField Label="Password"  @bind-Value="CustomerView.Password" For="@(() => CustomerView.Password)" />
+                                </MudCardContent>
+                                <MudCardActions>
+                                    <MudTooltip Text="Save">
+                                        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Save" Color="Color.Info" Size="Size.Small">Save</MudButton>
+                                        <MudButton Href="/customerlist" Style="margin-left:1rem;" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small">Back</MudButton>
+                                    </MudTooltip>
+                                </MudCardActions>
+                            </MudCard>
+                        </MudItem>
+                    </MudGrid>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+
+    [Parameter]
+    public int? Id { get; set; }
+
+    public string MyRole { get; set; } = null!;
+    private CustomerView CustomerView { get; set; } = new CustomerView();
+    private string Title { get; set; } = "Add a ";
+    public List<String> Genres = new() { "Fiction", "SciFi" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationState;
+        //authState.User.Identity.Name = the actual email of the account
+        if (!authState.User.Identity!.IsAuthenticated)
+        {
+            var uri = new Uri(_navigationManager.Uri);
+            _navigationManager.NavigateTo($"/identity/account/login?returnUrl={uri.LocalPath}", forceLoad:true);
+        }
+
+        MyRole = authState.User.IsInRole(GlobalConst.RoleAdmin) 
+            ? GlobalConst.RoleAdmin : GlobalConst.RoleCustomer;
+
+        if (Id != null)
+        {
+            Title = "Update";
+            var id = Id.Value;
+            CustomerView = await _customerManager.GetCustomerAsync(id);
+
+        }
+        else
+        {
+            Title = "Add a ";
+            CustomerView = new();
+        }
+    }
+
+    private async Task HandleCustomerUpsert()
+    {
+        try
+        {
+            if (CustomerView.Id != 0 && Title == "Update")
+            {
+                var updateResult = await _customerManager.UpdateCustomerAsync(CustomerView);
+
+                if (updateResult != null)
+                {
+
+                }
+                else
+                {
+
+                }
+            }
+            else
+            {
+                var createdResult = await _customerManager.CreateCustomerAsync(CustomerView);
+                if (createdResult != null)
+                {
+
+                }
+                else
+                {
+
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Whoops! Location: Handle Customer Upsert -> {ex.Message}");
+        }
+
+        _navigationManager.NavigateTo("customerlist");
+    }
+}
+

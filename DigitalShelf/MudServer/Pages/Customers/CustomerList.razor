@@ -1,0 +1,117 @@
+﻿@page "/customerlist"
+@using MudServer.Common
+
+@inject ICustomerManager _customerManager
+@inject NavigationManager _navigationManager
+@inject IDialogService _dialogService
+
+@*Be sure to add AuthorizeRouteView in App.razor*@
+@attribute [Authorize] 
+@*@attribute [Authorize(Roles=GlobalConst.RoleAdmin)] *@
+
+<div>
+    My Role is: @MyRole
+</div>
+
+
+<div class="row mt-4">
+    <div class="col" style="margin-bottom: 2rem;">
+        <h4 class="card-title text-info">
+            My Library
+            <MudButton Href="@($"customer/create")" Variant="Variant.Filled" Style="float: right;" Color="Color.Primary">
+                <MudTooltip Text="Add">Add a Customer</MudTooltip>
+            </MudButton>
+        </h4>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <MudTable Items="@Customers" class="table table-bordered table-hover">
+            <HeaderContent>
+                <MudTh>Id</MudTh>
+                <MudTh>IP</MudTh>
+                <MudTh>City</MudTh>
+                <MudTh>State</MudTh>
+                <MudTh>Last Logged In</MudTh>
+                <MudTh>Password</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Id">@context.Id</MudTd>
+                <MudTd DataLabel="IP">@context.IP</MudTd>
+                <MudTd DataLabel="City">@context.City</MudTd>
+                <MudTd DataLabel="State">@context.State</MudTd>
+                <MudTd DataLabel="LastLoggedIn">@context.LastLogin.Value.ToString("MM/dd/yyyy")</MudTd>
+                <MudTd DataLabel="Password">@context.Password</MudTd>
+                <MudTd>
+                    <MudTooltip Text="Edit">
+                        <MudFab Href="@($"customer/edit/{@context.Id}")" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Edit" Size="Size.Small" />
+                    </MudTooltip>
+                </MudTd>
+                <MudTd>
+                    <MudTooltip Text="Delete">
+                        <MudIconButton @onclick="()=> OnButtonClicked(context.Id)" Icon="@Icons.Material.Filled.Delete" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Medium" />
+                    </MudTooltip>
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    </div>
+</div>
+
+@code {
+
+    [CascadingParameter]
+    public Task<AuthenticationState> AuthenticationState { get; set; } = null!;
+    public string MyRole { get; set; } = null!;
+
+    public IEnumerable<CustomerView> Customers { get; set; } = new List<CustomerView>();
+    private int? DeleteId { get; set; } = null;
+    private bool IsProcessing { get; set; } = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationState;
+
+        if (!authState.User.Identity!.IsAuthenticated)
+        {
+            var uri = new Uri(_navigationManager.Uri);
+            _navigationManager.NavigateTo($"/identity/account/login?returnUrl={uri.LocalPath}", forceLoad:true);
+        }
+
+        MyRole = authState.User.IsInRole(GlobalConst.RoleAdmin) 
+            ? GlobalConst.RoleAdmin : GlobalConst.RoleCustomer;
+
+        //authState.User.Identity.Name = the actual email of the account
+        Customers = await _customerManager.GetCustomersAsync();
+    }
+
+    public async Task CustomerDeleteAsync(int id)
+    {
+        var authState = await AuthenticationState;
+
+        DeleteId = id;
+        IsProcessing = true;
+
+        if (DeleteId != null)
+        {
+            await _customerManager.DeleteCustomerAsync(DeleteId.Value);
+
+            Customers = await _customerManager.GetCustomersAsync();
+        }
+        IsProcessing = false;
+    }
+    
+    private async void OnButtonClicked(int id)
+    {
+        bool? result = await _dialogService.ShowMessageBox(
+                "Warning", 
+                "Deleting can not be undone!", 
+                yesText:"Delete!", cancelText:"Cancel");
+        if (result == true)
+        {
+            await CustomerDeleteAsync(id);
+        }
+
+        StateHasChanged();
+    }
+}
