@@ -26,6 +26,7 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>()
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.AddScoped<IUserManager, UserManager>();
 builder.Services.AddScoped<IBookManager, BookManager>();
+builder.Services.AddScoped<ICustomerManager, CustomerManager>();
 
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
