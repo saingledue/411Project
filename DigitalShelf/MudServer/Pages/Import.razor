@@ -1,0 +1,91 @@
+﻿@page "/import"
+@using ViewModels
+@using System
+@using System.Globalization
+@inject ICustomerManager _customerManager
+<PageTitle>Import Data</PageTitle>
+
+<MudText Typo="Typo.h3" GutterBottom="true">Import Data</MudText>
+<InputFile id="importFile" OnChange="UploadFiles" hidden />
+<MudButton HtmlTag="label" Variant="Variant.Filled"
+           Color="Color.Primary" StartIcon="@Icons.Filled.CloudUpload"
+           Class="my-3" for="importFile">
+    Upload Image
+</MudButton>
+
+
+@code {
+    private int currentCount = 0;
+
+    private void LoadData()
+    {
+        currentCount++;
+    }
+
+    private async Task UploadFiles(InputFileChangeEventArgs e)
+    {
+        var dbFiles = e.GetMultipleFiles();
+        foreach (var dbFile in dbFiles)
+        {
+            if (dbFile != null)
+            {
+                var test = dbFile.ToString();
+                Stream reader = dbFile.OpenReadStream();
+                var character = '\0';
+                string data = "";
+                string[] array_to_add = new string[5];
+                var index = 0;
+                while (character >= 0)
+                {
+                    byte[] buffer  = new Byte[1];
+                    int readByte = await reader.ReadAsync(buffer, 0, buffer.Length);
+                    if (readByte < 0)
+                    {
+                        break;
+                    }
+                    character = (char)(buffer[0]);
+                    if (character == ',' || index==5 && character == ' ')
+                    {
+                        if(index == 1)
+                        {
+                            array_to_add[0] = data;
+                        }
+                        if(index == 2)
+                        {
+                            array_to_add[1] = data;
+                        }
+                        if(index == 3)
+                        {
+                            array_to_add[2] = data;
+                        }
+                        if(index == 4)
+                        {
+                            array_to_add[3] = data;
+                        }
+                        if(index == 5)
+                        {
+                            array_to_add[4] = data;
+                            CustomerView customer = new CustomerView();
+                            customer.IP = array_to_add[0];
+                            customer.City = array_to_add[1];
+                            customer.State = array_to_add[2];
+                            CultureInfo provider = CultureInfo.InvariantCulture;
+                            var format = "ddd MMM d HH:mm:ss yyyy";
+                            customer.LastLogin = DateTime.ParseExact( array_to_add[3],format,provider);
+                            customer.Password = array_to_add[4];
+                            var addedCustomer = await _customerManager.CreateCustomerAsync(customer);
+                            index = -1;
+                        }
+                        index++;
+                        data = "";
+                    }
+                    else
+                    {
+                      data = data + character;   
+                    }
+                }
+
+            }
+        }
+    }
+}

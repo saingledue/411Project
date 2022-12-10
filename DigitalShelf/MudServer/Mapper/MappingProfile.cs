@@ -10,6 +10,7 @@ namespace MudServer.Mapper
         {
             CreateMap<BookView, Book>().ReverseMap();
             CreateMap<UserView, User>().ReverseMap();
+            CreateMap<CustomerView, Customer>().ReverseMap();
         }
     }
 }
